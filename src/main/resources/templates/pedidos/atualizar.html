@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atualizar Pedido</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-dark text-white">
+    <div class="container mt-5">
+        <h1 class="text-center">Atualizar Pedido</h1>
+        <form th:action="@{/pedidos/atualizar}" th:object="${pedido}" method="post">
+            <div class="mb-3">
+                <label for="cliente" class="form-label">Cliente</label>
+                <select id="cliente" name="cliente.id" class="form-select" required>
+                    <option th:each="cliente : ${clientes}" th:value="${cliente.id}" th:text="${cliente.nome}"></option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="funcionario" class="form-label">Funcionário</label>
+                <select id="funcionario" name="funcionario.id" class="form-select" required>
+                    <option th:each="funcionario : ${funcionarios}" th:value="${funcionario.id}" th:text="${funcionario.nome}"></option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="produto" class="form-label">Produto</label>
+                <select id="produto" name="produtoId" class="form-select" required>
+                    <option th:each="produto : ${produtos}" th:value="${produto.id}" th:text="${produto.nome}" th:data-preco="${produto.preco}"></option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="quantidade" class="form-label">Quantidade</label>
+                <input type="number" id="quantidade" name="quantidade" class="form-control" min="1" required>
+            </div>
+            <button type="submit" class="btn btn-success mt-3">Salvar Pedido</button>
+            <table class="table table-dark table-striped table-hover mt-3" id="itensPedidoTable">
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Quantidade</th>
+                        <th>Preço</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="item : ${itensPedido}">
+                        <td th:text="${item.produto.nome}"></td>
+                        <td th:text="${item.quantidade}"></td>
+                        <td th:text="${item.precoUnitario}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </form>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</body>
+</html>
