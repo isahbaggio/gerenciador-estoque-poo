@@ -1,6 +1,7 @@
 package com.gerenciamentoestoque.api.controller;
 
 import com.gerenciamentoestoque.domain.exceptions.ClienteNaoEncontradoException;
+import com.gerenciamentoestoque.domain.exceptions.NegocioException;
 import com.gerenciamentoestoque.domain.model.Cliente;
 import com.gerenciamentoestoque.domain.service.ClienteService;
 import com.gerenciamentoestoque.domain.util.TelefoneUtils;
@@ -60,7 +61,7 @@ public class ClienteController {
         try {
             clienteService.save(cliente);
         } catch (Exception e) {
-            // Lidar com exceção ao salvar cliente
+            throw new NegocioException("Erro ao salvar cliente.");
         }
         return "redirect:/clientes";
     }
@@ -72,9 +73,9 @@ public class ClienteController {
             BeanUtils.copyProperties(cliente, clienteAtual, "id");
             clienteService.save(clienteAtual);
         } catch (ClienteNaoEncontradoException e) {
-            // Lidar com exceção de cliente não encontrado
+            throw new ClienteNaoEncontradoException("Cliente não encontrado ao tentar atualizar.");
         } catch (Exception e) {
-            // Lidar com outras exceções
+            throw new NegocioException("Erro ao atualizar cliente.");
         }
         return "redirect:/clientes";
     }
@@ -87,9 +88,9 @@ public class ClienteController {
             }
             clienteService.delete(id);
         } catch (ClienteNaoEncontradoException e) {
-            // Lidar com exceção de cliente não encontrado
+            throw new ClienteNaoEncontradoException("Cliente não encontrado ao tentar excluir.");
         } catch (Exception e) {
-            // Lidar com outras exceções
+            throw new NegocioException("Erro ao excluir cliente.");
         }
         return "redirect:/clientes";
     }

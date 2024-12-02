@@ -1,6 +1,7 @@
 package com.gerenciamentoestoque.api.controller;
 
 import com.gerenciamentoestoque.domain.exceptions.FuncionarioNaoEncontradoException;
+import com.gerenciamentoestoque.domain.exceptions.NegocioException;
 import com.gerenciamentoestoque.domain.model.Funcionario;
 import com.gerenciamentoestoque.domain.service.FuncionarioService;
 import jakarta.validation.Valid;
@@ -44,9 +45,9 @@ public class FuncionarioController {
             BeanUtils.copyProperties(funcionario, funcionarioAtual, "id");
             funcionarioService.save(funcionarioAtual);
         } catch (FuncionarioNaoEncontradoException e) {
-            // Lidar com exceção de funcionário não encontrado
+            throw new FuncionarioNaoEncontradoException("Funcionário não encontrado");
         } catch (Exception e) {
-            // Lidar com outras exceções
+           throw new NegocioException("Erro ao atualizar funcionário");
         }
         return "redirect:/funcionarios";
     }

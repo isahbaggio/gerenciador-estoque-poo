@@ -9,4 +9,5 @@ public interface ItemPedidoService
 	ItemPedido findById(Long id);
 	ItemPedido save(ItemPedido itemPedido);
 	void delete(Long id);
+	List<ItemPedido> findByPedidoId(Long pedidoId);
 }

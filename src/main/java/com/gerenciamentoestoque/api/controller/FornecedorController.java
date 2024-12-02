@@ -1,6 +1,7 @@
 package com.gerenciamentoestoque.api.controller;
 
 import com.gerenciamentoestoque.domain.exceptions.FornecedorNaoEncontradoException;
+import com.gerenciamentoestoque.domain.exceptions.NegocioException;
 import com.gerenciamentoestoque.domain.model.Fornecedor;
 import com.gerenciamentoestoque.domain.model.enums.CategoriaProduto;
 import com.gerenciamentoestoque.domain.service.FornecedorService;
@@ -55,7 +56,7 @@ public class FornecedorController {
         try {
             fornecedorService.save(fornecedor);
         } catch (Exception e) {
-            // Lidar com exceção ao salvar fornecedor
+            throw new NegocioException("Erro ao salvar fornecedor.");
         }
         return "redirect:/fornecedores";
     }
@@ -67,9 +68,9 @@ public class FornecedorController {
             BeanUtils.copyProperties(fornecedor, fornecedorAtual, "id");
             fornecedorService.save(fornecedorAtual);
         } catch (FornecedorNaoEncontradoException e) {
-            // Lidar com exceção de fornecedor não encontrado
+            throw new FornecedorNaoEncontradoException("Fornecedor não encontrado ao tentar atualizar.");
         } catch (Exception e) {
-            // Lidar com outras exceções
+            throw new NegocioException("Erro ao atualizar fornecedor.");
         }
         return "redirect:/fornecedores";
     }
@@ -82,9 +83,9 @@ public class FornecedorController {
             }
             fornecedorService.delete(id);
         } catch (FornecedorNaoEncontradoException e) {
-            // Lidar com exceção de fornecedor não encontrado
+            throw new FornecedorNaoEncontradoException("Fornecedor não encontrado ao tentar excluir.");
         } catch (Exception e) {
-            // Lidar com outras exceções
+            throw new NegocioException("Erro ao excluir fornecedor.");
         }
         return "redirect:/fornecedores";
     }

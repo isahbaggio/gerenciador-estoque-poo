@@ -1,16 +1,13 @@
-import com.gerenciamentoestoque.domain.exceptions.ItemPedidoNaoEncontradoException;
+package com.gerenciamentoestoque.api.controller;
+
+import com.gerenciamentoestoque.domain.exceptions.NegocioException;
+import com.gerenciamentoestoque.domain.exceptions.PedidoNaoEncontradoException;
 import com.gerenciamentoestoque.domain.model.ItemPedido;
 import com.gerenciamentoestoque.domain.model.Pedido;
-import com.gerenciamentoestoque.domain.model.Produto;
-import com.gerenciamentoestoque.domain.service.ClienteService;
-import com.gerenciamentoestoque.domain.service.FuncionarioService;
-import com.gerenciamentoestoque.domain.service.PedidoService;
-import com.gerenciamentoestoque.domain.service.ProdutoService;
+import com.gerenciamentoestoque.domain.service.*;
 import jakarta.servlet.http.HttpSession;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -25,119 +22,103 @@ public class PedidoController {
     private PedidoService pedidoService;
 
     @Autowired
-    private ProdutoService produtoService;
-
-    @Autowired
     private ClienteService clienteService;
 
     @Autowired
     private FuncionarioService funcionarioService;
 
+    @Autowired
+    private ItemPedidoService itemPedidoService;
+
     @GetMapping
     public String listarPedidos(Model model) {
-        List<Pedido> pedidos = pedidoService.list();
-        model.addAttribute("pedidos", pedidos);
+        model.addAttribute("pedidos", pedidoService.list());
         return "pedidos/listar";
     }
 
     @GetMapping("/novo")
-    public String novoPedido(Model model, HttpSession session) {
+    public String novoPedido(Model model) {
         Pedido pedido = new Pedido();
-        List<ItemPedido> itensPedido = new ArrayList<>();
-
-        session.setAttribute("pedido", pedido);
-        session.setAttribute("itensPedido", itensPedido);
-
-        carregarDadosFormulario(model, pedido, itensPedido);
-
-        return "pedidos/formulario";
-    }
-
-    @PostMapping("/adicionarItem")
-    public String adicionarItemAoPedido(@ModelAttribute("itemPedido") ItemPedido itemPedido,
-        HttpSession session, Model model)
-    {
-        Pedido pedido = (Pedido) session.getAttribute("pedido");
-        List<ItemPedido> itensPedido = (List<ItemPedido>) session.getAttribute("itensPedido");
-
-        itemPedido.setProduto(produtoService.findById(itemPedido.getProduto().getId()));
-        itemPedido.setPedido(pedido);
-        itensPedido.add(itemPedido);
-
-        carregarDadosFormulario(model, pedido, itensPedido);
-
+        carregarDadosFormulario(model, pedido);
         return "pedidos/formulario";
     }
 
     @PostMapping("/salvar")
-    public String salvarPedido(@ModelAttribute Pedido pedido,
-        @RequestParam("produtoId") Long produtoId,
-        @RequestParam("quantidade") int quantidade)
-    {
-        Produto produto = produtoService.findById(produtoId);
-        ItemPedido itemPedido = new ItemPedido();
-        itemPedido.setProduto(produto);
-        itemPedido.setQuantidade(quantidade);
-        itemPedido.setPrecoUnitario(produto.getPreco().multiply(new BigDecimal(quantidade)));
-        itemPedido.setPedido(pedido);
-
-        List<ItemPedido> itensPedido = new ArrayList<>();
-        itensPedido.add(itemPedido);
-        pedido.setItensPedido(itensPedido);
-
-        pedidoService.save(pedido);
-
-        return "redirect:/pedidos";
-    }
-
-    @PostMapping("/atualizar")
-    public String atualizarPedido(@ModelAttribute Pedido pedido,
-        @RequestParam("produtoId") Long produtoId,
-        @RequestParam("quantidade") int quantidade)
-    {
-        Produto produto = produtoService.findById(produtoId);
-        ItemPedido itemPedido = new ItemPedido();
-        itemPedido.setProduto(produto);
-        itemPedido.setQuantidade(quantidade);
-        itemPedido.setPrecoUnitario(produto.getPreco().multiply(new BigDecimal(quantidade)));
-        itemPedido.setPedido(pedido);
-
-        Pedido pedidoExistente = pedidoService.findById(pedido.getId());
-        if (pedidoExistente != null) {
-
-            BeanUtils.copyProperties(pedidoExistente, pedido, "id");
-
-            List<ItemPedido> itensPedido = pedidoExistente.getItensPedido();
-            itensPedido.add(itemPedido);
-            pedidoExistente.setItensPedido(itensPedido);
-            pedidoService.save(pedidoExistente);
+    public String salvarPedido(@ModelAttribute Pedido pedido, HttpSession session){
+        Pedido pedidoExistente = null;
+        if (Objects.nonNull(pedido.getId())) {
+            pedidoExistente = pedidoService.findById(pedido.getId());
         }
 
+        if (Objects.nonNull(pedidoExistente)) {
+            BeanUtils.copyProperties(pedido, pedidoExistente, "id");
+            pedidoService.save(pedidoExistente);
+        } else {
+            pedidoService.save(pedido);
+        }
+
+        session.removeAttribute("pedido");
+        session.removeAttribute("itensPedido");
+
         return "redirect:/pedidos";
     }
+
 
     @GetMapping("/editar/{id}")
-    public String editarPedido(@PathVariable Long id, Model model, HttpSession session) {
+    public String editarPedido(@PathVariable Long id, Model model) {
         Pedido pedido = pedidoService.findById(id);
         if (pedido == null) {
-            throw new ItemPedidoNaoEncontradoException("Pedido não encontrado ao tentar editar.");
+            throw new PedidoNaoEncontradoException("Pedido não encontrado para edição.");
         }
+        carregarDadosFormulario(model, pedido);
+        return "pedidos/formulario";
+    }
+
+    @PostMapping("/removerItem/{pedidoId}/{itemId}")
+    public String removerItemPedido(@PathVariable Long pedidoId, @PathVariable Long itemId, HttpSession session, Model model) {
+        Pedido pedido = pedidoService.findById(pedidoId);
+
+        if (pedido == null) {
+            throw new PedidoNaoEncontradoException("Pedido não encontrado.");
+        }
+
         List<ItemPedido> itensPedido = pedido.getItensPedido();
+        boolean removed = itensPedido.removeIf(item -> item.getId().equals(itemId));
 
-        session.setAttribute("pedido", pedido);
-        session.setAttribute("itensPedido", itensPedido);
+        if (!removed) {
+            throw new NegocioException("Item não encontrado no pedido.");
+        }
 
-        carregarDadosFormulario(model, pedido, itensPedido);
+        Pedido pedidoAtualizado = new Pedido();
+        BeanUtils.copyProperties(pedido, pedidoAtualizado, "itensPedido");
+        pedidoAtualizado.setId(pedido.getId());
+        pedidoAtualizado.setItensPedido(itensPedido);
+        pedidoService.save(pedidoAtualizado);
+        session.setAttribute("pedido", pedidoAtualizado);
 
-        return "pedidos/atualizar";
+        carregarDadosFormulario(model, pedidoAtualizado, itensPedido);
+
+        return "pedidos/formulario";
+    }
+
+
+    @PostMapping("/remover/{id}")
+    public String removerPedido(@PathVariable Long id) {
+        pedidoService.delete(id);
+        return "redirect:/pedidos";
+    }
+
+    private void carregarDadosFormulario(Model model, Pedido pedido) {
+        model.addAttribute("pedido", pedido);
+        model.addAttribute("clientes", clienteService.list());
+        model.addAttribute("itensPedido", itemPedidoService.findByPedidoId(pedido.getId()));
+        model.addAttribute("funcionarios", funcionarioService.list());
     }
 
     private void carregarDadosFormulario(Model model, Pedido pedido, List<ItemPedido> itensPedido) {
         model.addAttribute("pedido", pedido);
         model.addAttribute("clientes", clienteService.list());
-        model.addAttribute("funcionarios", funcionarioService.list());
-        model.addAttribute("produtos", produtoService.list());
         model.addAttribute("itensPedido", itensPedido);
-        model.addAttribute("itemPedido", new ItemPedido());
+        model.addAttribute("funcionarios", funcionarioService.list());
     }
 }

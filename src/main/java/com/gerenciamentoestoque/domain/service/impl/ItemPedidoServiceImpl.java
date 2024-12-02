@@ -36,4 +36,10 @@ public class ItemPedidoServiceImpl implements ItemPedidoService
 	{
 		itemPedidoRepository.deleteById(id);
 	}
+
+	@Override
+	public List<ItemPedido> findByPedidoId(Long pedidoId)
+	{
+		return itemPedidoRepository.findByPedidoId(pedidoId);
+	}
 }
